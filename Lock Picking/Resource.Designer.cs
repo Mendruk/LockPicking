@@ -111,18 +111,19 @@ namespace Lock_Picking {
         /// <summary>
         ///   Поиск локализованного ресурса типа System.IO.UnmanagedMemoryStream, аналогичного System.IO.MemoryStream.
         /// </summary>
-        public static System.IO.UnmanagedMemoryStream lockpicking_pickmovement {
+        public static System.IO.UnmanagedMemoryStream lockpicking_unlock {
             get {
-                return ResourceManager.GetStream("lockpicking_pickmovement", resourceCulture);
+                return ResourceManager.GetStream("lockpicking_unlock", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Поиск локализованного ресурса типа System.IO.UnmanagedMemoryStream, аналогичного System.IO.MemoryStream.
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
         /// </summary>
-        public static System.IO.UnmanagedMemoryStream lockpicking_unlock {
+        public static System.Drawing.Bitmap LockpickTakeDamage {
             get {
-                return ResourceManager.GetStream("lockpicking_unlock", resourceCulture);
+                object obj = ResourceManager.GetObject("LockpickTakeDamage", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
             }
         }
         

@@ -1,162 +1,187 @@
 ﻿using System.Media;
 
-namespace Lock_Picking
+namespace Lock_Picking;
+
+public class Game
 {
-    public class Game
+    public static Random Random = new();
+
+    //font
+    private static readonly Font font = new(FontFamily.GenericSansSerif, 12, FontStyle.Bold);
+    private static readonly StringFormat Format = new();
+
+    //images
+    private readonly Bitmap lockImage = Resource.Lock;
+    private readonly Bitmap keyHole = Resource.Keyhole;
+    private readonly Bitmap lockpick = Resource.Lockpick;
+    private readonly Bitmap screwdriver = Resource.Screwdriver;
+    //sounds
+    private readonly SoundPlayer lockPickingEnter = new(Resource.lockpicking_enter);
+    private readonly SoundPlayer lockPickingFail = new(Resource.lockpicking_fail);
+    private readonly SoundPlayer lockPickingSuccess = new(Resource.lockpicking_unlock);
+    private readonly Bitmap lockpickTakeDamage = Resource.LockpickTakeDamage;
+
+    private readonly int width;
+    private readonly int height;
+
+    private readonly int incompleteOpeningZoneBoundary = 30;
+    private readonly int openingZoneBoundary = 10;
+    private readonly double screwdriverRotationStep = 4;
+
+    private double lockpickAngle;
+    private double screwdriverAngle;
+    private double screwdriverAngleLimit;
+    private double targetAngle;
+
+    private int brakingLockpicks;
+    private int breakingLock;
+    private int strength;
+
+    private bool isLockPickTakeDamage;
+
+    public bool isKeyPressed;
+
+
+    public Game(int gameFiledWidth, int gameFieldHeight)
     {
-        //font
-        private static readonly Font font = new(FontFamily.GenericMonospace, 25, FontStyle.Bold);
-        private static readonly StringFormat Format = new();
-        //sounds
-        private readonly SoundPlayer lockPickingEnter = new(Resource.lockpicking_enter);
-        private readonly SoundPlayer lockPickingFail = new(Resource.lockpicking_fail);
-        private readonly SoundPlayer lockPickingSuccess = new(Resource.lockpicking_unlock);
-        private readonly SoundPlayer lockPickingMove = new(Resource.lockpicking_pickmovement);
-        //images
-        private readonly Bitmap masterKey = Resource.Lockpick;
-        private readonly Bitmap lockpick = Resource.Screwdriver;
-        private readonly Bitmap keyHole = Resource.Keyhole;
+        lockPickingEnter.Play();
 
-        public static Random Random = new();
-        private readonly int width;
-        private readonly int height;
+        width = gameFiledWidth;
+        height = gameFieldHeight;
+        Format.Alignment = StringAlignment.Center;
+        strength = 10;
 
-        private int strength;
-        private int brakingMasterKey;
-        private int breakingLock;
+        targetAngle = GetRandomTargetAngle();
+        Restart();
+    }
 
-        private double lockpickAngle;
-        private int screwdriverAngle;
-        private int screwdriverAngleLimit;
+    public void Update(int mouseX)
+    {
+        lockpickAngle = 180 * mouseX / width - 180;
 
-        private int targetAngle;
-        private int targetZone = 10;
-        private int targetSecondZone = 25;
+        screwdriverAngleLimit = GetScrewdriverAngleLimit();
 
-        public bool isKeyPressed;
-
-        public Game(int gameFiledWidth, int gameFieldHeight)
+        if (isKeyPressed)
         {
-            lockPickingEnter.Play();
-
-            width = gameFiledWidth;
-            height = gameFieldHeight;
-            Format.Alignment = StringAlignment.Center;
-            strength = 10;
-
-            Restart();
-        }
-
-        public void Update(int mouseX)
-        {
-            //todo
-            lockpickAngle = 180 * mouseX / width - 180;
-
-            //TODO
-            if (lockpickAngle < targetAngle + targetZone &&
-                lockpickAngle > targetAngle - targetZone)
-                screwdriverAngleLimit = 90;
-            else if (lockpickAngle < targetAngle + targetSecondZone &&
-                     lockpickAngle > targetAngle - targetSecondZone)
-                screwdriverAngleLimit = 30;
-            else
-                screwdriverAngleLimit = 0;
-
-            if (isKeyPressed)
+            if (screwdriverAngle < screwdriverAngleLimit)
             {
-                if (screwdriverAngle <= screwdriverAngleLimit)
+                screwdriverAngle += screwdriverRotationStep;
+
+                if (screwdriverAngle >= 90)
                 {
-                    screwdriverAngle += 4;
-                    if (screwdriverAngle >= 90)
-                    {
-                        lockPickingSuccess.PlaySync();
-                        breakingLock++;
-                        Restart();
-                        targetAngle = GetRandomTargetAngle();
-                    }
-                }
-                else
-                {
-                    screwdriverAngle -= 4;
-                    lockPickingMove.Play();
-                    if (strength > 1)
-                        strength--;
-                    else
-                    {
-                        lockPickingFail.PlaySync();
-                        brakingMasterKey++;
-                        Restart();
-                        strength = 10;
-                    }
+                    lockPickingSuccess.PlaySync();
+                    breakingLock++;
+                    Restart();
+                    targetAngle = GetRandomTargetAngle();
                 }
             }
             else
-            if (screwdriverAngle >= 0)
-                screwdriverAngle -= 4;
-
+            {
+                isLockPickTakeDamage = true;
+                if (strength > 1)
+                {
+                    strength--;
+                }
+                else
+                {
+                    lockPickingFail.PlaySync();
+                    brakingLockpicks++;
+                    Restart();
+                    strength = 10;
+                }
+            }
         }
-        //TODO
-        public void Draw(Graphics graphics)
+        else
         {
-            string text1 = $"Взломанные замки:{breakingLock}" +
-                           $"\nСломанные отмычки:{brakingMasterKey}" +
-                           $"\nПрочность отмычки:{strength}";
-
-            graphics.DrawString(text1, font, Brushes.Black, width / 2, height / 12, Format);
-
-
-            int X = width / 2;
-            int Y = height / 2;
-
-            double temp = Math.Sqrt(keyHole.Width * keyHole.Width + keyHole.Height * keyHole.Height) / 2;
-
-            Point[] destinationPointsKeyHole =
-            {
-                new((int)(X + temp * Math.Cos((screwdriverAngle - 135) * Math.PI / 180)),
-                    (int)(Y + 10 + temp * Math.Sin((screwdriverAngle - 135) * Math.PI / 180))),
-                new((int)(X + temp * Math.Cos((screwdriverAngle - 45) * Math.PI / 180)),
-                    (int)(Y + 10 + temp * Math.Sin((screwdriverAngle - 45) * Math.PI / 180))),
-                new((int)(X + temp * Math.Cos((screwdriverAngle + 135) * Math.PI / 180)),
-                    (int)(Y + 10 + temp * Math.Sin((screwdriverAngle + 135) * Math.PI / 180)))
-            };
-
-            graphics.DrawImage(keyHole, destinationPointsKeyHole);
-            Point[] destinationPoints =
-            {
-                new((int)(X - lockpick.Width / 2 * Math.Cos((screwdriverAngle - 90) * Math.PI / 180)),
-                    (int)(Y - lockpick.Width / 2 * Math.Sin((screwdriverAngle - 90) * Math.PI / 180))),
-                new((int)(X + lockpick.Width / 2 * Math.Cos((screwdriverAngle - 90) * Math.PI / 180)),
-                    (int)(Y + lockpick.Width / 2 * Math.Sin((screwdriverAngle - 90) * Math.PI / 180))),
-                new((int)(X + lockpick.Height * Math.Cos(screwdriverAngle * Math.PI / 180)),
-                    (int)(Y + lockpick.Height * Math.Sin(screwdriverAngle * Math.PI / 180)))
-            };
-            graphics.DrawImage(lockpick, destinationPoints);
-
-            double masterKeyX = X + 20 * Math.Cos((screwdriverAngle - 90) * Math.PI / 180);
-            double masterKeyY = Y + 20 * Math.Sin((screwdriverAngle - 90) * Math.PI / 180);
-
-            Point[] destinationPointsKey =
-            {
-                new((int)(masterKeyX - masterKey.Width / 2 * Math.Cos((lockpickAngle - 90) * Math.PI / 180)),
-                    (int)(masterKeyY - masterKey.Width / 2 * Math.Sin((lockpickAngle - 90) * Math.PI / 180))),
-                new((int)(masterKeyX + masterKey.Width / 2 * Math.Cos((lockpickAngle - 90) * Math.PI / 180)),
-                    (int)(masterKeyY + masterKey.Width / 2 * Math.Sin((lockpickAngle - 90) * Math.PI / 180))),
-                new((int)(masterKeyX + masterKey.Height * Math.Cos(lockpickAngle * Math.PI / 180)),
-                    (int)(masterKeyY + masterKey.Height * Math.Sin(lockpickAngle * Math.PI / 180)))
-            };
-
-            graphics.DrawImage(masterKey, destinationPointsKey);
-
-            graphics.DrawImage(lockpick, destinationPoints);
+            isLockPickTakeDamage = false;
+            if (screwdriverAngle > 0)
+                screwdriverAngle -= screwdriverRotationStep;
         }
+    }
 
-        private void Restart()
+    //TODO
+    public void Draw(Graphics graphics)
+    {
+        int X = width / 2;
+        int Y = height / 2;
+
+        graphics.DrawImage(lockImage, X - lockImage.Width / 2, Y - lockImage.Height / 2, lockImage.Width,
+            lockImage.Width);
+
+        string text1 = $"Взломанные замки:{breakingLock}" +
+                       $"\nСломанные отмычки:{brakingLockpicks}";
+
+        graphics.DrawString(text1, font, Brushes.White, width / 2, height / 20, Format);
+
+        double keyHoleReferenceLenght = Math.Sqrt(keyHole.Width * keyHole.Width + keyHole.Height * keyHole.Height) / 2;
+
+        Point[] destinationPointsKeyHole =
         {
-            isKeyPressed = false;
-            screwdriverAngle = 0;
-            lockpickAngle = -90;
-        }
+            new((int)(X + 2 + keyHoleReferenceLenght * Math.Cos((screwdriverAngle - 135) * Math.PI / 180)),
+                (int)(Y - 3 + keyHoleReferenceLenght * Math.Sin((screwdriverAngle - 135) * Math.PI / 180))),
+            new((int)(X + 2 + keyHoleReferenceLenght * Math.Cos((screwdriverAngle - 45) * Math.PI / 180)),
+                (int)(Y - 3 + keyHoleReferenceLenght * Math.Sin((screwdriverAngle - 45) * Math.PI / 180))),
+            new((int)(X + 2 + keyHoleReferenceLenght * Math.Cos((screwdriverAngle + 135) * Math.PI / 180)),
+                (int)(Y - 3 + keyHoleReferenceLenght * Math.Sin((screwdriverAngle + 135) * Math.PI / 180)))
+        };
 
-        private int GetRandomTargetAngle() => Random.Next(-180 + targetSecondZone, -targetSecondZone);
+        graphics.DrawImage(keyHole, destinationPointsKeyHole);
+
+        double lockPickX = X + 20 * Math.Cos((screwdriverAngle - 90) * Math.PI / 180);
+        double lockPickY = Y - 5 + 20 * Math.Sin((screwdriverAngle - 90) * Math.PI / 180);
+
+        Point[] destinationPointsLockPick =
+        {
+            new((int)(lockPickX - lockpick.Width / 2 * Math.Cos((lockpickAngle - 90) * Math.PI / 180)),
+                (int)(lockPickY - lockpick.Width / 2 * Math.Sin((lockpickAngle - 90) * Math.PI / 180))),
+            new((int)(lockPickX + lockpick.Width / 2 * Math.Cos((lockpickAngle - 90) * Math.PI / 180)),
+                (int)(lockPickY + lockpick.Width / 2 * Math.Sin((lockpickAngle - 90) * Math.PI / 180))),
+            new((int)(lockPickX + lockpick.Height * Math.Cos(lockpickAngle * Math.PI / 180)),
+                (int)(lockPickY + lockpick.Height * Math.Sin(lockpickAngle * Math.PI / 180)))
+        };
+
+        if (!isLockPickTakeDamage)
+            graphics.DrawImage(lockpick, destinationPointsLockPick);
+        else
+            graphics.DrawImage(lockpickTakeDamage, destinationPointsLockPick);
+
+
+        Point[] destinationPointsScrewdriver =
+        {
+            new((int)(X - screwdriver.Width / 2 * Math.Cos((screwdriverAngle - 90) * Math.PI / 180)),
+                (int)(Y - 10 - screwdriver.Width / 2 * Math.Sin((screwdriverAngle - 90) * Math.PI / 180))),
+            new((int)(X + screwdriver.Width / 2 * Math.Cos((screwdriverAngle - 90) * Math.PI / 180)),
+                (int)(Y - 10 + screwdriver.Width / 2 * Math.Sin((screwdriverAngle - 90) * Math.PI / 180))),
+            new((int)(X + screwdriver.Height * Math.Cos(screwdriverAngle * Math.PI / 180)),
+                (int)(Y - 10 + screwdriver.Height * Math.Sin(screwdriverAngle * Math.PI / 180)))
+        };
+
+        graphics.DrawImage(screwdriver, destinationPointsScrewdriver);
+    }
+
+    private void Restart()
+    {
+        isKeyPressed = false;
+        screwdriverAngle = 0;
+        lockpickAngle = -90;
+    }
+
+    private double GetScrewdriverAngleLimit()
+    {
+        double angleLimit = 0;
+
+        if (lockpickAngle < targetAngle + incompleteOpeningZoneBoundary &&
+            lockpickAngle > targetAngle - incompleteOpeningZoneBoundary)
+            angleLimit = 45; //todo
+
+        if (lockpickAngle < targetAngle + openingZoneBoundary &&
+            lockpickAngle > targetAngle - openingZoneBoundary)
+            angleLimit = 90;
+        return angleLimit;
+    }
+
+    private double GetRandomTargetAngle()
+    {
+        return Random.Next(-180 + openingZoneBoundary, -openingZoneBoundary);
     }
 }

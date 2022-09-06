@@ -1,52 +1,53 @@
-namespace Lock_Picking
+namespace Lock_Picking;
+
+internal partial class MainForm : Form
 {
-    partial class MainForm : Form
+    private const int GameFieldWidth = 726;
+    private const int GameFieldHeight = 726;
+
+    private readonly Game game;
+
+    private int mouseX;
+
+    public MainForm()
     {
-        private const int GameFieldWidth = 726;
-        private const int GameFieldHeight = 726;
+        InitializeComponent();
+        SetStyle(ControlStyles.DoubleBuffer |
+                 ControlStyles.AllPaintingInWmPaint |
+                 ControlStyles.UserPaint, true);
 
-        private int mouseX;
+        Width = GameFieldWidth;
+        Height = GameFieldHeight;
 
-        private Game game;
+        game = new Game(GameFieldWidth, GameFieldHeight);
+    }
 
-        public MainForm()
-        {
-            InitializeComponent();
+    private void MainForm_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.KeyCode == Keys.Space)
+            game.isKeyPressed = true;
+    }
 
-            Width = GameFieldWidth;
-            Height = GameFieldHeight;
+    private void MainForm_KeyUp(object sender, KeyEventArgs e)
+    {
+        if (e.KeyCode == Keys.Space)
+            game.isKeyPressed = false;
+    }
 
-            game = new Game(GameFieldWidth, GameFieldHeight);
-        }
+    private void timer_Tick(object sender, EventArgs e)
+    {
+        game.Update(mouseX);
+        Refresh();
+    }
 
-        private void pictureGameField_Paint(object sender, PaintEventArgs e)
-        {
-            game.Draw(e.Graphics);
-        }
+    private void MainForm_Paint(object sender, PaintEventArgs e)
+    {
+        game.Draw(e.Graphics);
+    }
 
-        private void pictureGameField_MouseMove(object sender, MouseEventArgs e)
-        {
-            if(!game.isKeyPressed) 
-                mouseX = e.X;
-        }
-
-        private void MainForm_KeyDown(object sender, KeyEventArgs e)
-        {
-            if(e.KeyCode == Keys.Space) 
-                game.isKeyPressed=true;
-        }
-
-        private void MainForm_KeyUp(object sender, KeyEventArgs e)
-        {
-            if (e.KeyCode == Keys.Space)
-                game.isKeyPressed=false;
-        }
-
-        private void timer_Tick(object sender, EventArgs e)
-        {
-            game.Update(mouseX);
-            pictureGameField.Refresh();
-        }
-
+    private void MainForm_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (!game.isKeyPressed)
+            mouseX = e.X;
     }
 }

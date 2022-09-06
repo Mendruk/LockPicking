@@ -133,11 +133,11 @@
   <data name="lockpicking_fail" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>resources\lockpicking_fail.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="lockpicking_pickmovement" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>resources\lockpicking_pickmovement.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
   <data name="lockpicking_unlock" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>resources\lockpicking_unlock.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="LockpickTakeDamage" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>resources\lockpicktakedamage.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="Screwdriver" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Resources\Screwdriver.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
