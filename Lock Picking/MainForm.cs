@@ -7,8 +7,6 @@ internal partial class MainForm : Form
 
     private readonly Game game;
 
-    private int mouseX;
-
     public MainForm()
     {
         InitializeComponent();
@@ -36,7 +34,7 @@ internal partial class MainForm : Form
 
     private void timer_Tick(object sender, EventArgs e)
     {
-        game.Update(mouseX);
+        game.Update();
         Refresh();
     }
 
@@ -48,6 +46,6 @@ internal partial class MainForm : Form
     private void MainForm_MouseMove(object sender, MouseEventArgs e)
     {
         if (!game.isKeyPressed)
-            mouseX = e.X;
+            game.lockpickAngle = 180 * e.X / Width - 180;
     }
 }

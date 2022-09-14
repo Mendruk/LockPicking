@@ -25,13 +25,13 @@ public class Game
     private readonly int height;
 
     private readonly int incompleteOpeningZoneBoundary = 30;
-    private readonly int openingZoneBoundary = 10;
+    private readonly int openingZoneBoundary = 5;
     private readonly double screwdriverRotationStep = 4;
 
-    private double lockpickAngle;
+
     private double screwdriverAngle;
     private double screwdriverAngleLimit;
-    private double targetAngle;
+    public double targetAngle;
 
     private int brakingLockpicks;
     private int breakingLock;
@@ -40,7 +40,7 @@ public class Game
     private bool isLockPickTakeDamage;
 
     public bool isKeyPressed;
-
+    public double lockpickAngle;
 
     public Game(int gameFiledWidth, int gameFieldHeight)
     {
@@ -55,10 +55,8 @@ public class Game
         Restart();
     }
 
-    public void Update(int mouseX)
+    public void Update()
     {
-        lockpickAngle = 180 * mouseX / width - 180;
-
         screwdriverAngleLimit = GetScrewdriverAngleLimit();
 
         if (isKeyPressed)
@@ -168,16 +166,15 @@ public class Game
 
     private double GetScrewdriverAngleLimit()
     {
-        double angleLimit = 0;
+        if (lockpickAngle < targetAngle + openingZoneBoundary &&
+            lockpickAngle > targetAngle - openingZoneBoundary)
+            return 90;
 
         if (lockpickAngle < targetAngle + incompleteOpeningZoneBoundary &&
             lockpickAngle > targetAngle - incompleteOpeningZoneBoundary)
-            angleLimit = 45; //todo
+            return (1 - (Math.Abs(-lockpickAngle + targetAngle)) / incompleteOpeningZoneBoundary) * 90;
 
-        if (lockpickAngle < targetAngle + openingZoneBoundary &&
-            lockpickAngle > targetAngle - openingZoneBoundary)
-            angleLimit = 90;
-        return angleLimit;
+        return 0;
     }
 
     private double GetRandomTargetAngle()
