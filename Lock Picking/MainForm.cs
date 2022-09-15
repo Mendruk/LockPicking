@@ -46,6 +46,6 @@ internal partial class MainForm : Form
     private void MainForm_MouseMove(object sender, MouseEventArgs e)
     {
         if (!game.isKeyPressed)
-            game.lockpickAngle = 180 * e.X / Width - 180;
+            game.lockpickAngle = 180 * e.X / Width;
     }
 }
