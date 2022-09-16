@@ -4,23 +4,25 @@ namespace Lock_Picking;
 
 public class Game
 {
-    public static Random Random = new();
+    private const int InitialLockpickStrength = 10;
 
-    private static readonly Font font = new(FontFamily.GenericSansSerif, 12, FontStyle.Bold);
+    private static readonly Font Font = new(FontFamily.GenericSansSerif, 12, FontStyle.Bold);
     private static readonly StringFormat Format = new();
+
+    private static Random Random = new();
 
     private readonly Bitmap lockBitmap = Resource.Lock;
     private readonly Bitmap keyHoleBitmap = Resource.Keyhole;
     private readonly Bitmap lockpickBitmap = Resource.Lockpick;
     private readonly Bitmap screwdriverBitmap = Resource.Screwdriver;
+    private readonly Bitmap lockpickTakeDamageBitmap = Resource.LockpickTakeDamage;
 
-    private readonly SoundPlayer lockPickingEnter = new(Resource.lockpicking_enter);
-    private readonly SoundPlayer lockPickingFail = new(Resource.lockpicking_fail);
-    private readonly SoundPlayer lockPickingSuccess = new(Resource.lockpicking_unlock);
-    private readonly Bitmap lockpickTakeDamage = Resource.LockpickTakeDamage;
+    private readonly SoundPlayer lockpickingEnterSound = new(Resource.lockpicking_enter);
+    private readonly SoundPlayer lockpickingFailSound = new(Resource.lockpicking_fail);
+    private readonly SoundPlayer lockpickingSuccessSound = new(Resource.lockpicking_unlock);
 
-    private readonly int width;
-    private readonly int height;
+    private readonly int gameFieldWidth;
+    private readonly int gameFieldHeight;
 
     private readonly int incompleteOpeningZoneBoundary = 30;
     private readonly int openingZoneBoundary = 5;
@@ -29,34 +31,34 @@ public class Game
 
     private double screwdriverAngle;
     private double screwdriverAngleLimit;
-    public double targetAngle;
+    private double lockpickTargetAngle;
 
-    private int brakingLockpicks;
-    private int breakingLock;
-    private int strength;
+    private int brokenLockpicks;
+    private int openedLocks;
+    private int lockpickStrength;
 
-    private bool isLockPickTakeDamage;
+    private bool isLockpickTakeDamage;
 
-    public bool isKeyPressed;
-    public double lockpickAngle;
+    public bool IsKeyPressed;
+    public double LockpickAngle;
 
-    public Game(int gameFiledWidth, int gameFieldHeight)
+    public Game(int gameFieldWidth, int gameFieldHeight)
     {
-        width = gameFiledWidth;
-        height = gameFieldHeight;
+        this.gameFieldWidth = gameFieldWidth;
+        this.gameFieldHeight = gameFieldHeight;
 
         Format.Alignment = StringAlignment.Center;
-        strength = 10;
-        targetAngle = GetRandomTargetAngle();
-        Restart();
-        lockPickingEnter.Play();
+        lockpickStrength = InitialLockpickStrength;
+        lockpickTargetAngle = GetRandomTargetAngle();
+        ResetLockpickingProcess();
+        lockpickingEnterSound.Play();
     }
 
     public void Update()
     {
         screwdriverAngleLimit = GetScrewdriverAngleLimit();
 
-        if (isKeyPressed)
+        if (IsKeyPressed)
         {
             if (screwdriverAngle < screwdriverAngleLimit)
             {
@@ -64,45 +66,41 @@ public class Game
 
                 if (screwdriverAngle >= 90)
                 {
-                    lockPickingSuccess.Play();
-                    breakingLock++;
-                    Restart();
-                    targetAngle = GetRandomTargetAngle();
+                    OnLockOpenen();
                 }
             }
             else
             {
-                isLockPickTakeDamage = true;
-                if (strength > 1)
+                isLockpickTakeDamage = true;
+                if (lockpickStrength > 0)
                 {
-                    strength--;
+                    lockpickStrength--;
                 }
                 else
                 {
-                    lockPickingFail.Play();
-                    brakingLockpicks++;
-                    Restart();
-                    strength = 10;
+                    OnLockpickBroken();
                 }
             }
         }
         else
         {
-            isLockPickTakeDamage = false;
+            isLockpickTakeDamage = false;
             if (screwdriverAngle > 0)
                 screwdriverAngle -= screwdriverRotationStep;
         }
     }
 
-    //TODO
     public void Draw(Graphics graphics)
     {
-        string indicatorText = $"Взломанные замки:{breakingLock}" +
-                               $"\nСломанные отмычки:{brakingLockpicks}";
+        int gameFieldCenterX = gameFieldWidth / 2;
+        int gameFieldCenterY = gameFieldHeight / 2;
 
-        graphics.DrawString(indicatorText, font, Brushes.White, width / 2, height / 20, Format);
+        string indicatorText = $"Взломанные замки: {openedLocks}" +
+                               $"\nСломанные отмычки: {brokenLockpicks}";
 
-        graphics.TranslateTransform(width / 2, height / 2);
+                               graphics.DrawString(indicatorText, Font, Brushes.White, gameFieldCenterX, gameFieldCenterY / 10, Format);
+
+        graphics.TranslateTransform(gameFieldCenterX, gameFieldCenterY);
 
         graphics.DrawImage(lockBitmap, -lockBitmap.Width / 2 - 1, -lockBitmap.Height / 2 + 3);
 
@@ -113,36 +111,50 @@ public class Game
 
         graphics.ResetTransform();
 
-        int lockpickX = (int)(20 * Math.Cos((screwdriverAngle - 90) * Math.PI / 180));
-        int lockpickY = (int)(20 * Math.Sin((screwdriverAngle - 90) * Math.PI / 180));
+        int lockpickOffsetX = (int)(20 * Math.Cos((screwdriverAngle - 90) * Math.PI / 180));
+        int lockpickOffsetY = (int)(20 * Math.Sin((screwdriverAngle - 90) * Math.PI / 180));
 
-        graphics.TranslateTransform(width / 2 + lockpickX, height / 2 + lockpickY);
-        graphics.RotateTransform((float)lockpickAngle + 90);
+        graphics.TranslateTransform(gameFieldCenterX + lockpickOffsetX, gameFieldCenterY + lockpickOffsetY);
+        graphics.RotateTransform((float)LockpickAngle + 90);
 
-        if (!isLockPickTakeDamage)
+        if (!isLockpickTakeDamage)
             graphics.DrawImage(lockpickBitmap, -lockpickBitmap.Width / 2, 0);
         else
-            graphics.DrawImage(lockpickTakeDamage, -lockpickTakeDamage.Width / 2, 0);
+            graphics.DrawImage(lockpickTakeDamageBitmap, -lockpickTakeDamageBitmap.Width / 2, 0);
 
-        graphics.ResetTransform();
     }
 
-    private void Restart()
+    private void OnLockOpenen()
     {
-        isKeyPressed = false;
+        lockpickingSuccessSound.Play();
+        openedLocks++;
+        ResetLockpickingProcess();
+        lockpickTargetAngle = GetRandomTargetAngle();
+    }
+    private void OnLockpickBroken()
+    {
+        lockpickingFailSound.Play();
+        brokenLockpicks++;
+        ResetLockpickingProcess();
+        lockpickStrength = InitialLockpickStrength;
+    }
+
+    private void ResetLockpickingProcess()
+    {
+        IsKeyPressed = false;
         screwdriverAngle = 0;
-        lockpickAngle = 90;
+        LockpickAngle = 90;
     }
 
     private double GetScrewdriverAngleLimit()
     {
-        if (lockpickAngle < targetAngle + openingZoneBoundary &&
-            lockpickAngle > targetAngle - openingZoneBoundary)
+        if (LockpickAngle < lockpickTargetAngle + openingZoneBoundary &&
+            LockpickAngle > lockpickTargetAngle - openingZoneBoundary)
             return 90;
 
-        if (lockpickAngle < targetAngle + incompleteOpeningZoneBoundary &&
-            lockpickAngle > targetAngle - incompleteOpeningZoneBoundary)
-            return (1 - (Math.Abs(-lockpickAngle + targetAngle)) / incompleteOpeningZoneBoundary) * 90;
+        if (LockpickAngle < lockpickTargetAngle + incompleteOpeningZoneBoundary &&
+            LockpickAngle > lockpickTargetAngle - incompleteOpeningZoneBoundary)
+            return (1 - (Math.Abs(-LockpickAngle + lockpickTargetAngle)) / incompleteOpeningZoneBoundary) * 90;
 
         return 0;
     }

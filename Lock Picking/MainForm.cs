@@ -23,13 +23,13 @@ internal partial class MainForm : Form
     private void MainForm_KeyDown(object sender, KeyEventArgs e)
     {
         if (e.KeyCode == Keys.Space)
-            game.isKeyPressed = true;
+            game.IsKeyPressed = true;
     }
 
     private void MainForm_KeyUp(object sender, KeyEventArgs e)
     {
         if (e.KeyCode == Keys.Space)
-            game.isKeyPressed = false;
+            game.IsKeyPressed = false;
     }
 
     private void timer_Tick(object sender, EventArgs e)
@@ -45,7 +45,15 @@ internal partial class MainForm : Form
 
     private void MainForm_MouseMove(object sender, MouseEventArgs e)
     {
-        if (!game.isKeyPressed)
-            game.lockpickAngle = 180 * e.X / Width;
+
+        if (!game.IsKeyPressed)
+        {
+            if (e.X < Width / 3)
+                game.LockpickAngle = 0;
+            else if (e.X > Width * 2 / 3)
+                game.LockpickAngle = 180;
+            else
+                game.LockpickAngle = 180 * (e.X - Width / 3) / (Width / 3);
+        }
     }
 }
